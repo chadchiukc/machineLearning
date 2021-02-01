@@ -1,46 +1,49 @@
 import pandas as pd
 import numpy as np
-import random
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-LEARNING_RATE = 0.01
-ITERATION = 1000
+LEARNING_RATE = 0.05
+ITERATION = 500
 EPSILON = 0.01
-PERCENTAGE_OF_TRAINING = 0.8
+PERCENTAGE_OF_TRAINING = 0.9
+
 
 def load_data():
     df = pd.read_csv('./train.csv')
     # test_data = pd.read_csv('./test.csv')
     # print(df.info())
-    random.shuffle(df)
+    df = df.sample(frac=1)
     train_data = df[: int(len(df) * PERCENTAGE_OF_TRAINING)]
     test_data = df[int(len(df) * PERCENTAGE_OF_TRAINING):]
 
     # numeric_features = df.select_dtypes(include=[np.number]) ##only select numeric feature
     # corr = numeric_features.corr()
     # print(corr['SalePrice'].sort_values(ascending=False))
+    return train_data, test_data
 
-    x_train = train_data['GrLivArea']
+
+def data_process_linear_numeric_only(train_data, test_data, params):
+    x_train = train_data[params]
     y_train = train_data['SalePrice']
 
-    x_test = train_data['GrLivArea']
-    y_test = train_data['SalePrice']
+    x_test = test_data[params]
+    # x_test = test_data['GrLivArea']
+    y_test = test_data['SalePrice']
 
     # Normalization with bias added
     x_train = (x_train - x_train.mean()) / x_train.std()
-    x_train = np.c_[np.ones(x_train.size), x_train]
     x_test = (x_test - x_test.mean()) / x_test.std()
-    x_test = np.c_[np.ones(x_test.size), x_test]
+    x_train = np.c_[np.ones(x_train.shape[0]), x_train]
+    x_test = np.c_[np.ones(x_test.shape[0]), x_test]
 
     return x_train, y_train, x_test, y_test
 
 
 def gradient_descent(x, y):
     n = y.size
-
     rng = np.random.RandomState(128)
-    w = rng.rand(2)
+    w = rng.rand(x.shape[1])
     all_avg_err = []
     all_w = [w]
 
@@ -48,12 +51,21 @@ def gradient_descent(x, y):
         predication = np.dot(w, x.T)
         error = predication - y
         avg_err = 1 / n * np.dot(error.T, error)
-        # print(avg_err)
+        print(avg_err)
         all_avg_err.append(avg_err)
 
         w = w - LEARNING_RATE * (2 / n) * np.dot(x.T, error)
         all_w.append(w)
     return all_w, all_avg_err
+
+
+def validation(w, x, y):
+    n = y.size
+    final_w = w[-1]
+    predication = np.dot(final_w, x.T)
+    error = predication - y
+    avg_err = 1 / n * np.dot(error.T, error)
+    return avg_err
 
 
 def show_x(x, y, all_w, all_avg_err):
@@ -89,16 +101,41 @@ def show_err(all_avg_err):
     plt.title('Error')
     plt.xlabel('No. of iterations')
     plt.ylabel('Error')
-    plt.plot(all_avg_err)
+    for err in all_avg_err:
+        plt.plot(err)
     plt.show()
 
 
 def test():
-    x, y = load_data()
-    w, err = gradient_descent(x, y)
+    param_select = ['OverallQual', 'GrLivArea', 'GarageCars', 'GarageArea', 'TotalBsmtSF']
+    overall_train_err_set = []
+    overall_val_err_set = []
+    epoch = 0
+    while epoch < 15:
+        error_set = []
+        validation_error_set = []
+        train_data, test_data = load_data()
+        param_set = []
+        for param in param_select:
+            param_set.append(param)
+            x_train, y_train, x_test, y_test = data_process_linear_numeric_only(train_data, test_data, param_set)
+            w, err = gradient_descent(x_train, y_train)
+            error_set.append(err)
+            validation_error_set.append(validation(w, x_test, y_test))
+        # show_err(error_set)
+        train_err_final = [error[-1] for error in error_set]
+        epoch += 1
+        overall_train_err_set.append(train_err_final)
+        overall_val_err_set.append(validation_error_set)
+    overall_train_err = pd.DataFrame(overall_train_err_set)
+    overall_val_err = pd.DataFrame(overall_val_err_set)
+    print(overall_train_err.mean(axis=0))
+    print(overall_val_err.mean(axis=0))
+
+
+    # w, err = gradient_descent(x_train, y_train)
     # print(err[-1])
 
-    # show_err(err)
     # show_x(x, y, w, err)
 
 
