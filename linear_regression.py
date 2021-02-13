@@ -37,10 +37,11 @@ def data_normalization(df):
     return df
 
 
-def data_binomailization(degree, df):
+##only for dataframe
+def data_nonbasic_expression(degree, df):
     df_set = [df]
     for i in range(2, degree + 1):
-        df_temp = df**i
+        df_temp = df ** i
         df_set.append(df_temp)
     return pd.concat(df_set, axis=1)
 
@@ -134,8 +135,8 @@ def test():
             param_set.append(param)
             x_train, y_train, x_test, y_test = data_selection_numeric_only(train_data, test_data, param_set)
 
-            x_train = data_binomailization(3, x_train)
-            x_test = data_binomailization(3, x_test)
+            x_train = data_nonbasic_expression(2, x_train)
+            x_test = data_nonbasic_expression(2, x_test)
             x_train = data_normalization(x_train)
             x_test = data_normalization(x_test)
 
