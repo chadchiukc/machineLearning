@@ -2,7 +2,6 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import stopwords
 from nltk.tag import pos_tag
 from nltk.tokenize import word_tokenize
-from nltk import FreqDist
 import numpy as np
 from nltk import NaiveBayesClassifier
 import timeit
@@ -10,14 +9,16 @@ import pickle
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
-def preprocess_data_from_file(filename):
+
+# load data from file, then tokenize all the sentence and remove stop words
+def load_data_by_tokenize_lemma(filename):
     x_train = []
     y_train = []
     stop_words = stopwords.words('english')
-    with open(filename) as f:
-        docs = f.read().splitlines()
+    with open(filename) as file:
+        docs = file.read().splitlines()
         for doc in docs:
-            x, y = doc.split(';')
+            x, y = doc.split(';') # split the data with x and label as sep=';'
             x = [token.lower() for token in word_tokenize(x) if token.lower() not in stop_words]
             token_list = lemmatization(x)
             x_train.append(token_list)
@@ -25,6 +26,7 @@ def preprocess_data_from_file(filename):
     return np.array(x_train, dtype=object), np.array(y_train, dtype=object)
 
 
+# get the vocabulary from training dataset
 def get_vocabulary(x):
     return set(token for sent in x for token in sent)
 
@@ -44,23 +46,15 @@ def lemmatization(tokenlist):
     return token_list
 
 
-def pretraining(x, y, vocab):
-    train_data = []
-    for sent in x:
-        new_sent = {word: (word in sent) for word in vocab}
-        train_data.append(new_sent)
-    train_data = np.c_[(train_data, y)]
-    return train_data
-
-
-def pretraining_wo_y(x, vocab):
+# pre-process all the datapoint in dataset by adding all the vocab into each datapoint.
+def preprocess_with_vocab(x, vocab):
     train_data = []
     for sent in x:
         new_sent = {word: (word in sent) for word in vocab}
         train_data.append(new_sent)
     return train_data
 
-
+# plot the confusion matrix with pre-defined classes
 def confusion_matrix_plot(ytest, ypred):
     classes = ['joy', 'fear', 'love', 'anger', 'sadness', 'surprise']
     cm = confusion_matrix(ytest, ypred, labels=classes)
@@ -71,9 +65,10 @@ def confusion_matrix_plot(ytest, ypred):
 
 start = timeit.default_timer()
 
-# x, y = preprocess_data_from_file('train.txt')
+# x, y = load_data_by_tokenize_lemma('train.txt')
 # vocab = get_vocabulary(x)
-# train_data = pretraining(x, y, vocab)
+# train_data = preprocess_with_vocab(x, vocab)
+# train_data = np.c_[(train_data, y)] ## concentrate x with label for training the model
 # classifier = NaiveBayesClassifier.train(train_data)
 # f = open('nbc.pickle', 'wb')
 # pickle.dump(classifier, f)
@@ -89,12 +84,11 @@ f = open('vocab.pickle', 'rb')
 vocab = pickle.load(f)
 f.close()
 
-xtest, ytest = preprocess_data_from_file('train2.txt')
+xtest, ytest = load_data_by_tokenize_lemma('train2.txt')
 # classifier.show_most_informative_features()
-xtest = pretraining_wo_y(xtest, vocab)
+xtest = preprocess_with_vocab(xtest, vocab)
 ypred = classifier.classify_many(xtest)
 confusion_matrix_plot(ytest, ypred)
 
 end = timeit.default_timer()
 print(end - start)
-
