@@ -1,6 +1,5 @@
 from sklearn.datasets import load_iris
 import numpy as np
-import math
 
 
 def load_data():
@@ -46,7 +45,7 @@ class NBC:
         self.class_condi = class_condi
 
     def prior_distribution_by_class(self):
-        self.class_prior = {i: math.log10(np.count_nonzero(self.ytrain == i) / len(self.ytrain)) for i in
+        self.class_prior = {i: np.log(np.count_nonzero(self.ytrain == i) / len(self.ytrain)) for i in
                             np.unique(self.ytrain)}
 
     def fit(self, Xtrain, ytrain):
@@ -59,7 +58,7 @@ class NBC:
     def normal_pdf_w_log(self, x, mean, std):
         std = std if std != 0 else 10 ** -6
         try:
-            return math.log10(math.exp(-((x - mean) / std) ** 2 / 2) / (std * (2 * math.pi) ** .5))
+            return np.log(np.exp(-((x - mean) / std) ** 2 / 2) / (std * (2 * np.pi) ** .5))
         except ValueError:
             return 10 ** -6
 

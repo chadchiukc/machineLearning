@@ -18,7 +18,7 @@ print(dictionary.token2id)
 
 corpus = [dictionary.doc2bow(gen_doc) for gen_doc in gen_docs]
 # corpus = [dictionary.doc2bow(gen_doc) for gen_doc in gen_docs]
-print('\n', corpus)
+print('corpus: ', corpus)
 
 tf_idf = gensim.models.TfidfModel(corpus)
 for doc in tf_idf[corpus]:
