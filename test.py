@@ -1,65 +1,59 @@
 from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.corpus import twitter_samples, stopwords
+from nltk.corpus import stopwords
 from nltk.tag import pos_tag
 from nltk.tokenize import word_tokenize
-import gensim
 import numpy as np
-from nltk import FreqDist, classify, NaiveBayesClassifier
+from nltk import NaiveBayesClassifier
 import timeit
-
-import re, string, random
-
-
-
-def preprocess_data(filename):
-    x_train = []
-    y_train = []
-    train = []
-    wnl = WordNetLemmatizer()
-    stop_words = stopwords.words('english')
-    with open(filename) as f:
-        docs = f.readlines()
-        for doc in docs:
-            x, y = doc.split(';')
-            x = word_tokenize(x)
-            token_list = []
-            for token, tag in pos_tag(x):
-                if tag.startswith("NN"):
-                    pos = 'n'
-                elif tag.startswith('VB'):
-                    pos = 'v'
-                else:
-                    pos = 'a'
-
-                token = wnl.lemmatize(token, pos)
-                token_list.append(token)
-            x_train.append(token_list)
-            # # pre_train = [
-            #     wnl.lemmatize(w.lower()) for w in word_tokenize(x) if wnl.lemmatize(w.lower()) not in stop_words]
-            # x_train.append(pos_tag(pre_train))
-            # x_train.append(pos_tag([
-            #     wnl.lemmatize(w.lower()) for w in word_tokenize(x) if wnl.lemmatize(w.lower()) not in stop_words]))
-            y_train.append(y.replace('\n', ''))
-    return x_train, y_train
+import string
+import nltk
+import pickle
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
 
 
+# load data from file and separate the text and the label
 def load_data(filename):
-    data = []
-    with open(filename) as f:
-        docs = f.read().splitlines()
+    X = []
+    y = []
+    with open(filename) as file:
+        docs = file.read().splitlines()
         for doc in docs:
-            data.append(doc.split(';'))
-    return data
+            text, label = doc.split(';')  # split the data with x and label as sep=';'
+            X.append(text)
+            y.append(label)
+    return X, y
 
-start = timeit.default_timer()
-x = load_data('naturalLanguageProcessing/sentiment_analysis/train.txt')
-print(x)
-# x, y = preprocess_data('train.txt')
-# print(x)
-# dictionary = gensim.corpora.Dictionary(x)
-# print(dictionary)
-# y = np.array(y)
-# print(np.unique(y))
-end = timeit.default_timer()
-print(end - start)
 
+# create a lemma function by wordnet lemmatizer for normalizing all the tokens into lemma form
+def lemmatization(text):
+    wnl = WordNetLemmatizer()
+    tokens = nltk.word_tokenize(text)  # tokenize the text into tokens first then lemmatize each token
+    return [wnl.lemmatize(token) for token in tokens]
+
+
+def training():
+    Xtrain, ytrain = load_data('naturalLanguageProcessing/sentiment_analysis/train.txt')
+    xtest, ytest = load_data('naturalLanguageProcessing/sentiment_analysis/val.txt')
+
+    # initialize the vector representing the term frequency for each document
+    tf_vectorizer = CountVectorizer(
+        stop_words='english',  # to remove all the stop words defined by sklearn
+        tokenizer=lemmatization,  # to lemmatize each token into lemma form
+        lowercase=True,  # to convert all the token into lower case
+        max_df=0.8,  # to ignore terms that the document frequency is higher than 80% of all documents
+        min_df=6,  # to ignore terms that the count of terms is below 6
+        ngram_range=(1, 2)  # to allow unigrams and bigrams to be extracted
+    )
+
+    # transform all samples into list of vectors with all the vocabs in the Xtrain(some tokens have been removed like
+    # stop words or the terms with higher document frequency etc as described in the tf_vectorizer)
+    X_train_tf = tf_vectorizer.fit_transform(Xtrain)
+
+    X_test_tf = tf_vectorizer.transform(xtest)  # transform testing samples into list of vectors with vocabs in Xtrain
+    nbc = MultinomialNB()  # initialize MNB
+    nbc.fit(X_train_tf, ytrain)  # train the
+    yhat = nbc.predict(X_test_tf)
+    print(np.mean(yhat == ytest))
