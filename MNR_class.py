@@ -28,26 +28,21 @@ class NBC:
         self.class_condi = None
         self.class_prior = None
 
-    ## separate the dataset into a dict with different classes
+    # separate the dataset into a dict with different classes
     def dataset_by_class(self):
-        class_dict = {}
-        for i in range(len(self.Xtrain)):
-            class_value = self.ytrain[i]
-            if class_value not in class_dict:
-                class_dict[class_value] = []
-            class_dict[class_value].append(self.Xtrain[i])
-        self.class_dict = class_dict
+        self.class_dict = {c: self.Xtrain[self.ytrain == c] for c in np.unique(self.ytrain)}
 
+    # calculate the condition distribution in a dict with a key for each class and value for each feature
     def condi_distribution_by_class(self):
-        class_condi = {}
-        for k, v in self.class_dict.items():
-            class_condi[k] = [[column.mean(), column.std(ddof=1)] for column in np.transpose(v)]
-        self.class_condi = class_condi
+        self.class_condi = {k: [[column.mean(), column.std(ddof=1)] for column in np.transpose(v)] for k, v in
+                            self.class_dict.items()}
 
+    # calculate the prior distribution in a dict with a key for each class and value for the class
     def prior_distribution_by_class(self):
         self.class_prior = {i: np.log(np.count_nonzero(self.ytrain == i) / len(self.ytrain)) for i in
                             np.unique(self.ytrain)}
 
+    # fit the model with X and y
     def fit(self, Xtrain, ytrain):
         self.Xtrain = Xtrain
         self.ytrain = ytrain
@@ -55,13 +50,16 @@ class NBC:
         self.condi_distribution_by_class()
         self.prior_distribution_by_class()
 
-    def normal_pdf_w_log(self, x, mean, std):
-        std = std if std != 0 else 10 ** -6
+    # calculate the normal distribution p.d.f. of a feature with log space
+    def normal_pdf_w_log(self, feature, feature_mean, feature_std):
+        feature_std = feature_std if feature_std != 0 else 10 ** -6
         try:
-            return np.log(np.exp(-((x - mean) / std) ** 2 / 2) / (std * (2 * np.pi) ** .5))
+            return np.log(
+                np.exp(-((feature - feature_mean) / feature_std) ** 2 / 2) / (feature_std * (2 * np.pi) ** .5))
         except ValueError:
             return 10 ** -6
 
+    # predict the yhat with Xtest and only return the result with the highest prob.
     def predict(self, Xtest):
         prob_set = []
         for datapoint in Xtest:
@@ -84,6 +82,7 @@ def demo():
     yhat = nbc.predict(Xtest)
     test_accuracy = np.mean(yhat == ytest)
     print(test_accuracy)
+
 
 ###############################
 if __name__ == '__main__':
