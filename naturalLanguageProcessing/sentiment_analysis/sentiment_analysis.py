@@ -2,6 +2,7 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.corpus import stopwords
 from nltk.tag import pos_tag
 from nltk.tokenize import word_tokenize
+import nltk
 import numpy as np
 from nltk import NaiveBayesClassifier
 import timeit
@@ -35,10 +36,12 @@ def lemmatization(tokenlist):
     wnl = WordNetLemmatizer()
     token_list = []
     for token, tag in pos_tag(tokenlist):
-        if tag.startswith("NN"):
+        if tag.startswith("N"):
             pos = 'n'
-        elif tag.startswith('VB'):
+        elif tag.startswith("V"):
             pos = 'v'
+        elif tag.startswith("R"):
+            pos = 'r'
         else:
             pos = 'a'
         token = wnl.lemmatize(token, pos)
@@ -54,6 +57,7 @@ def preprocess_with_vocab(x, vocab):
         train_data.append(new_sent)
     return train_data
 
+
 # plot the confusion matrix with pre-defined classes
 def confusion_matrix_plot(ytest, ypred):
     classes = ['joy', 'fear', 'love', 'anger', 'sadness', 'surprise']
@@ -63,32 +67,50 @@ def confusion_matrix_plot(ytest, ypred):
     plt.show()
 
 
-start = timeit.default_timer()
+def init():
+    nltk.download('stopwords')
+    nltk.download('punkt')
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('wordnet')
+    x, y = load_data_by_tokenize_lemma('train.txt')
+    vocab = get_vocabulary(x)
+    train_data = preprocess_with_vocab(x, vocab)
+    train_data = np.c_[(train_data, y)]  # concentrate x with label for training the model
+    classifier = NaiveBayesClassifier.train(train_data)
+    f = open('nbc.pickle', 'wb')
+    pickle.dump(classifier, f)
+    f.close()
+    f = open('vocab.pickle', 'wb')
+    pickle.dump(vocab, f)
+    f.close()
 
-# x, y = load_data_by_tokenize_lemma('train.txt')
-# vocab = get_vocabulary(x)
-# train_data = preprocess_with_vocab(x, vocab)
-# train_data = np.c_[(train_data, y)] ## concentrate x with label for training the model
-# classifier = NaiveBayesClassifier.train(train_data)
-# f = open('nbc.pickle', 'wb')
-# pickle.dump(classifier, f)
-# f.close()
-# f = open('vocab.pickle', 'wb')
-# pickle.dump(vocab, f)
-# f.close()
 
-f = open('nbc.pickle', 'rb')
-classifier = pickle.load(f)
-f.close()
-f = open('vocab.pickle', 'rb')
-vocab = pickle.load(f)
-f.close()
+def run_program():
+    # start = timeit.default_timer()
+    f = open('nbc.pickle', 'rb')
+    classifier = pickle.load(f)
+    f.close()
+    # f = open('vocab.pickle', 'rb')
+    # vocab = pickle.load(f)
+    # f.close()
 
-xtest, ytest = load_data_by_tokenize_lemma('train2.txt')
-# classifier.show_most_informative_features()
-xtest = preprocess_with_vocab(xtest, vocab)
-ypred = classifier.classify_many(xtest)
-confusion_matrix_plot(ytest, ypred)
+    xtest, ytest = load_data_by_tokenize_lemma('train.txt')
+    x = [i for x in xtest for i in x]
+    print(x)
+    print(nltk.FreqDist(x).most_common(100))
+    # classifier.show_most_informative_features()
+    # xtest = preprocess_with_vocab(xtest, vocab)
+    # ypred = classifier.classify_many(xtest)
+    # print(np.mean(ypred == ytest))
+    # confusion_matrix_plot(ytest, ypred)
+    #
+    # end = timeit.default_timer()
+    # print(end - start)
 
-end = timeit.default_timer()
-print(end - start)
+
+if __name__ == "__main__":
+    # init()
+    run_program()
+
+
+

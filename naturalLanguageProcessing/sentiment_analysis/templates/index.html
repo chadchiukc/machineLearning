@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentiment Analysis</title>
+</head>
+<body>
+<h1 style="text-align: center;">Comp 5423 Lab1 assignment</h1>
+<p style="text-align: center;">by Chiu Ka Chun 20001511G</p>
+<form role='form' method='POST' action='/'>
+    <div style='text-align: center;'>
+        <textarea name="sent" id="sent" placeholder="Please enter your feeling..."
+                  style="font-size: 20px; width: 400px; height: 200px"></textarea>
+    </div>
+    <div style='text-align: center; padding: 10px'>
+        <button type="submit">Submit</button>
+    </div>
+    <div style="text-align: center">
+        {% if pred %}
+        <img alt={{pred}}} height="300" src="/static/{{pred}}.png" width="300">
+        <div style="font-size: 20px">{{pred}}</div>
+        {% endif %}
+    </div>
+</form>
+</body>
+</html>

@@ -1,16 +1,7 @@
 from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.corpus import stopwords
-from nltk.tag import pos_tag
 from nltk.tokenize import word_tokenize
 import numpy as np
-from nltk import NaiveBayesClassifier
-import timeit
-import string
-import nltk
-import pickle
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
 
 
@@ -30,7 +21,7 @@ def load_data(filename):
 # create a lemma function by wordnet lemmatizer for normalizing all the tokens into lemma form
 def lemmatization(text):
     wnl = WordNetLemmatizer()
-    tokens = nltk.word_tokenize(text)  # tokenize the text into tokens first then lemmatize each token
+    tokens = word_tokenize(text)  # tokenize the text into tokens first then lemmatize each token
     return [wnl.lemmatize(token) for token in tokens]
 
 
