@@ -64,8 +64,8 @@ def metrics_result(ytest, ypred):
 
 # train the model and draw all the necessary results
 def training():
-    Xtrain, ytrain = load_data('train.txt')
-    xtest, ytest = load_data('val.txt')
+    Xtrain, ytrain = load_data('lab1_homework/train.txt')
+    xtest, ytest = load_data('lab1_homework/val.txt')
 
     # initialize the vector representing the term frequency for each document
     tf_vectorizer = CountVectorizer(
@@ -92,14 +92,14 @@ def training():
     print('The overall f1_score: %.4f' % (f1_score(ytest, ypred, average='macro')))
 
     # save the model for later use
-    joblib.dump(nbc, 'nbc_model.pkl')
-    joblib.dump(tf_vectorizer, 'tf_vectorizer.pkl')
+    joblib.dump(nbc, 'lab1_homework/nbc_model.pkl')
+    joblib.dump(tf_vectorizer, 'lab1_homework/tf_vectorizer.pkl')
 
 
 # used for batch dataset prediction by loading the model trained before
 def nbc_prediction(X):
-    tf_vectorizer = joblib.load('tf_vectorizer.pkl')
-    nbc = joblib.load('nbc_model.pkl')
+    tf_vectorizer = joblib.load('lab1_homework/tf_vectorizer.pkl')
+    nbc = joblib.load('lab1_homework/nbc_model.pkl')
     X_tf = tf_vectorizer.transform(X)
     return nbc.predict(X_tf)
 
@@ -109,8 +109,8 @@ def test_prediction(filename, new_filename):
     with open(filename) as file:
         docs = file.read().splitlines()
         Xtest = [doc for doc in docs]
-    tf_vectorizer = joblib.load('tf_vectorizer.pkl')
-    nbc = joblib.load('nbc_model.pkl')
+    tf_vectorizer = joblib.load('lab1_homework/tf_vectorizer.pkl')
+    nbc = joblib.load('lab1_homework/nbc_model.pkl')
     X_tf = tf_vectorizer.transform(Xtest)
     ypred = nbc.predict(X_tf)
     with open(new_filename, 'w+') as f:

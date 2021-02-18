@@ -2,12 +2,15 @@ from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, f1_score, precision_recall_fscore_support
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, f1_score, \
+    precision_recall_fscore_support
 import matplotlib.pyplot as plt
 import joblib
 from flask import Flask, render_template, request
 import numpy as np
+import os
 
+os.chdir('lab1_homework')  # change the dictionary containing the NLP_sentiment_analysis.py
 
 app = Flask(__name__)
 
@@ -65,7 +68,7 @@ def metrics_result(ytest, ypred):
 # train the model and draw all the necessary results
 def training():
     Xtrain, ytrain = load_data('train.txt')
-    xtest, ytest = load_data('val.txt')
+    Xtest, ytest = load_data('val.txt')
 
     # initialize the vector representing the term frequency for each document
     tf_vectorizer = CountVectorizer(
@@ -80,7 +83,7 @@ def training():
     # transform all samples into list of vectors with all the vocabs in the Xtrain(some tokens have been removed like
     # stop words or the terms with higher document frequency etc as described in the tf_vectorizer)
     X_train_tf = tf_vectorizer.fit_transform(Xtrain)
-    X_test_tf = tf_vectorizer.transform(xtest)  # transform testing samples into list of vectors with vocabs in Xtrain
+    X_test_tf = tf_vectorizer.transform(Xtest)  # transform testing samples into list of vectors with vocabs in Xtrain
     nbc = MultinomialNB()  # initialize MNB
     nbc.fit(X_train_tf, ytrain)  # train the model by training data
     ypred = nbc.predict(X_test_tf)  # test the model

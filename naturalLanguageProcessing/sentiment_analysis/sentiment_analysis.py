@@ -72,7 +72,7 @@ def init():
     nltk.download('punkt')
     nltk.download('averaged_perceptron_tagger')
     nltk.download('wordnet')
-    x, y = load_data_by_tokenize_lemma('train.txt')
+    x, y = load_data_by_tokenize_lemma('lab1_homework/train.txt')
     vocab = get_vocabulary(x)
     train_data = preprocess_with_vocab(x, vocab)
     train_data = np.c_[(train_data, y)]  # concentrate x with label for training the model
@@ -94,7 +94,7 @@ def run_program():
     # vocab = pickle.load(f)
     # f.close()
 
-    xtest, ytest = load_data_by_tokenize_lemma('train.txt')
+    xtest, ytest = load_data_by_tokenize_lemma('lab1_homework/train.txt')
     x = [i for x in xtest for i in x]
     print(x)
     print(nltk.FreqDist(x).most_common(100))

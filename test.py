@@ -26,8 +26,8 @@ def lemmatization(text):
 
 
 def training():
-    Xtrain, ytrain = load_data('naturalLanguageProcessing/sentiment_analysis/train.txt')
-    xtest, ytest = load_data('naturalLanguageProcessing/sentiment_analysis/val.txt')
+    Xtrain, ytrain = load_data('naturalLanguageProcessing/sentiment_analysis/lab1_homework/train.txt')
+    xtest, ytest = load_data('naturalLanguageProcessing/sentiment_analysis/lab1_homework/val.txt')
 
     # initialize the vector representing the term frequency for each document
     tf_vectorizer = CountVectorizer(
