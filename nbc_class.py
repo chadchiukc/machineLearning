@@ -52,12 +52,12 @@ class NBC:
 
     # calculate the normal distribution p.d.f. of a feature with log space
     def normal_pdf_w_log(self, feature, feature_mean, feature_std):
-        feature_std = feature_std if feature_std != 0 else 10 ** -6
+        feature_std = feature_std if feature_std != 0 else 10 ** -6  # return a small number if std is 0
         try:
             return np.log(
                 np.exp(-((feature - feature_mean) / feature_std) ** 2 / 2) / (feature_std * (2 * np.pi) ** .5))
         except ValueError:
-            return 10 ** -6
+            return 10 ** -6  # return a small number if output is 0
 
     # predict the yhat with Xtest and only return the result with the highest prob.
     def predict(self, Xtest):
@@ -79,9 +79,12 @@ def demo():
 
     nbc = NBC()
     nbc.fit(Xtrain, ytrain)
+    ytrain_hat = nbc.predict(Xtrain)
     yhat = nbc.predict(Xtest)
+    train_accuracy = np.mean(ytrain_hat == ytrain)
     test_accuracy = np.mean(yhat == ytest)
-    print(test_accuracy)
+    print('Train accuracy is: %.2f%%' % (train_accuracy * 100))
+    print('Test accuracy is: %.2f%%' % (test_accuracy * 100))
 
 
 ###############################
