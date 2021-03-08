@@ -76,6 +76,8 @@ class NBC:
 def demo():
     X, y = load_data()
     Xtrain, ytrain, Xtest, ytest = shuffle_data(X, y)
+    print(np.shape(Xtrain))
+    print(np.shape(ytrain))
 
     nbc = NBC()
     nbc.fit(Xtrain, ytrain)

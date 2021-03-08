@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 LEARNING_RATE = 0.01
-ITERATION = 1000
+ITERATION = 10
 EPSILON = 0.01
 PERCENTAGE_OF_TRAINING = 0.9
 FEATURES_NUM = 10
@@ -56,6 +56,7 @@ def gradient_descent(x, y):
     for i in range(ITERATION):
         predication = np.dot(w, x.T)
         error = predication - y
+        print(error)
         avg_err = 1 / n * np.dot(error.T, error)
         all_avg_err.append(avg_err)
 
@@ -126,7 +127,7 @@ def test():
     overall_val_err_set = []
     epoch = 0
 
-    while epoch < 15:
+    while epoch < 2:
         error_set = []
         validation_error_set = []
         train_data, test_data = shuffle_data(df)
@@ -135,8 +136,8 @@ def test():
             param_set.append(param)
             x_train, y_train, x_test, y_test = data_selection_numeric_only(train_data, test_data, param_set)
 
-            x_train = data_nonbasic_expression(2, x_train)
-            x_test = data_nonbasic_expression(2, x_test)
+            # x_train = data_nonbasic_expression(2, x_train)
+            # x_test = data_nonbasic_expression(2, x_test)
             x_train = data_normalization(x_train)
             x_test = data_normalization(x_test)
 
