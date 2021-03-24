@@ -1,6 +1,5 @@
 import os
 from tensorflow import keras
-from keras.utils import to_categorical
 import matplotlib.pyplot as plt
 from tensorflow.keras import layers
 from tensorflow.keras import losses
@@ -57,7 +56,7 @@ def optimization(net):
 
 
 def train(X_train, y_train, X_test, y_test, net):
-    history = net.fit(X_train, y_train, batch_size=50, epochs=1, steps_per_epoch=100, validation_data=(X_test, y_test))
+    history = net.fit(X_train, y_train, batch_size=50, epochs=2, validation_data=(X_test, y_test))
     return history
 
 
@@ -68,24 +67,24 @@ def custom_train(X_train, y_train, X_test, y_test, net):
     val_acc_metric = keras.metrics.SparseCategoricalAccuracy()
 
     train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
-    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size=50)
+    train_dataset = train_dataset.shuffle(buffer_size=60000).batch(batch_size=50)
 
     val_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
     val_dataset = val_dataset.batch(batch_size=50)
 
-    epochs = 5
+    epochs = 1
     for epoch in range(epochs):
         for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
                 logits = net(x_batch_train, training=True)
-                loss_value = loss_fn(y_batch_train, logits)
-            grads = tape.gradient(loss_value, net.trainable_weights)
+                train_loss_value = loss_fn(y_batch_train, logits)
+            grads = tape.gradient(train_loss_value, net.trainable_weights)
             optimizer.apply_gradients(zip(grads, net.trainable_weights))
             train_acc_metric.update_state(y_batch_train, logits)
             if step % 100 == 0:
                 print(
                     "Training loss at iteration %d: %.4f"
-                    % (epoch*1200 + step, float(loss_value))
+                    % (epoch*1200 + step, float(train_loss_value))
                 )
                 train_acc = train_acc_metric.result()
                 print("Training acc: %.4f" % (float(train_acc),))
@@ -93,33 +92,23 @@ def custom_train(X_train, y_train, X_test, y_test, net):
                 train_acc_metric.reset_states()
                 for x_batch_val, y_batch_val in val_dataset:
                     val_logits = net(x_batch_val, training=False)
+                    val_loss_value = loss_fn(y_batch_train, logits)
                     val_acc_metric.update_state(y_batch_val, val_logits)
                 val_acc = val_acc_metric.result()
                 val_acc_metric.reset_states()
+                print("Validation loss: %.4f" % (float(val_loss_value),))
                 print("Validation acc: %.4f" % (float(val_acc),))
                 break
+    # net.save('mnist_cnn')
 
 
 def visualize_filters(net):
-    # first_layer = net.layers[1]
-    # plt.imshow(first_layer.get_weights()[0][:, :, :, 0].squeeze(), cmap='gray')
-    # plt.show()
     filters = net.layers[1].get_weights()[0]
-    # f_min, f_max = filters.min(), filters.max()
-    # filters = (filters - f_min) / (f_max - f_min)
     index = 1
-    # for i in range(3):
-    #     f = filters[:, :, :, i]
-    #     for j in range(5):
-    #         ax = plt.subplot(3, 5, index)
-    #         ax.set_xticks([])
-    #         ax.set_yticks([])
-    #         plt.imshow(f[:, :, j], cmap='gray')
-    #         index += 1
     fig = plt.figure()
-    fig.set_size_inches(30, 5)
-    for i in range(15):
-        plt.subplot(1, 15, index)
+    fig.set_size_inches(18, 18)
+    for i in range(25):
+        plt.subplot(5, 5, index)
         plt.xticks([])
         plt.yticks([])
         plt.imshow(filters[:, :, :, i].squeeze(), cmap='gray')
@@ -127,21 +116,35 @@ def visualize_filters(net):
     plt.show()
 
 
+# def visualize_patches():
 
 def demo():
     X_train, y_train, X_test, y_test = load_data()
-    net = network()
-    visualize_filters(net)
+    # net = network()
+    net = keras.models.load_model('mnist_cnn', compile=False)
+    # visualize_filters(net)
     # optimization(net)
     # history = train(X_train, y_train, X_test, y_test, net)
     # custom_train(X_train, y_train, X_test, y_test, net)
-    # print(history)
+    net = keras.Model(inputs=net.inputs, outputs=net.layers[1].output)
+    # print(net.summary())
+    # print(X_test[0].shape)
+    test = X_test[0]
+    test = np.expand_dims(test, axis=0)
+    # for i in X_test:
+    #     feature_map = net.predict(i)
+    #     print(feature_map)
+    # plt.imshow(feature_maps[0, :, :, 0])
+    # plt.show()
+    # print(X_test[0].shape)
+    # print(net.layers[0].output.shape)
+    filter, _ = net.layers[1].get_weights()
+    print(filter[:,:,:,1])
+    test = tf.image.extract_patches(images=test, sizes=[1,12,12,1], strides=[1,2,2,1], rates=[1,1,1,1],padding='VALID')
+    print(test.shape)
 
 
 
-# network()
-# load_data()
-# visualize_data()
 if __name__ == "__main__":
     demo()
     # visualize_data()
