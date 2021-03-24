@@ -73,6 +73,11 @@ def custom_train(X_train, y_train, X_test, y_test, net):
     val_dataset = val_dataset.batch(batch_size=50)
 
     epochs = 1
+    iteration = []
+    train_acc_result = []
+    train_loss_result = []
+    val_acc_result = []
+    val_loss_result = []
     for epoch in range(epochs):
         for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
@@ -82,24 +87,32 @@ def custom_train(X_train, y_train, X_test, y_test, net):
             optimizer.apply_gradients(zip(grads, net.trainable_weights))
             train_acc_metric.update_state(y_batch_train, logits)
             if step % 100 == 0:
-                print(
-                    "Training loss at iteration %d: %.4f"
-                    % (epoch*1200 + step, float(train_loss_value))
-                )
                 train_acc = train_acc_metric.result()
-                print("Training acc: %.4f" % (float(train_acc),))
-            if epoch * 1200 + step == 5000:
-                train_acc_metric.reset_states()
+                print(
+                    "Training loss and acc at iteration %d: %.4f, %.4f"
+                    % (epoch * 1200 + step, float(train_loss_value), float(train_acc))
+                )
                 for x_batch_val, y_batch_val in val_dataset:
                     val_logits = net(x_batch_val, training=False)
                     val_loss_value = loss_fn(y_batch_train, logits)
                     val_acc_metric.update_state(y_batch_val, val_logits)
                 val_acc = val_acc_metric.result()
+                print("Validation loss and acc: %.4f, %.4f" % (float(val_loss_value), float(val_acc)))
+                train_loss_result.append(float(train_loss_value))
+                train_acc_result.append(float(train_acc))
+                val_loss_result.append(float(val_loss_value))
+                val_acc_result.append(float(val_acc))
+                iteration.append(epoch * 1200 + step)
+            if epoch * 1200 + step == 100:
                 val_acc_metric.reset_states()
-                print("Validation loss: %.4f" % (float(val_loss_value),))
-                print("Validation acc: %.4f" % (float(val_acc),))
+                train_acc_metric.reset_states()
                 break
-    # net.save('mnist_cnn')
+    print(train_loss_result)
+    print(train_acc_result)
+    print(val_loss_result)
+    print(val_acc_result)
+    print(iteration)
+    net.save('mnist_cnn')
 
 
 def visualize_filters(net):
@@ -123,26 +136,32 @@ def demo():
     # net = network()
     net = keras.models.load_model('mnist_cnn', compile=False)
     # visualize_filters(net)
-    # optimization(net)
-    # history = train(X_train, y_train, X_test, y_test, net)
     # custom_train(X_train, y_train, X_test, y_test, net)
-    net = keras.Model(inputs=net.inputs, outputs=net.layers[1].output)
-    # print(net.summary())
-    # print(X_test[0].shape)
-    test = X_test[0]
-    test = np.expand_dims(test, axis=0)
-    # for i in X_test:
-    #     feature_map = net.predict(i)
-    #     print(feature_map)
-    # plt.imshow(feature_maps[0, :, :, 0])
-    # plt.show()
-    # print(X_test[0].shape)
-    # print(net.layers[0].output.shape)
+    # net = keras.Model(inputs=net.inputs, outputs=net.layers[1].output)
     filter, _ = net.layers[1].get_weights()
-    print(filter[:,:,:,1])
-    test = tf.image.extract_patches(images=test, sizes=[1,12,12,1], strides=[1,2,2,1], rates=[1,1,1,1],padding='VALID')
-    print(test.shape)
+    test = X_test[0]
+    filter = filter[:, :, :, 0]
 
+    result =[]
+    for x in X_test:
+        result_i = []
+        for i in range(0, 18, 2):
+            result_j = []
+            for j in range(0, 18, 2):
+                testa = x[i:i + 12, j:j + 12, :]
+                mul = testa * filter
+                mul = mul.sum()
+                result_j.append(mul)
+            result_i.append(result_j)
+        result.append(result_i)
+    result = np.array(result)
+    ind = np.unravel_index(np.argmax(result, axis=None), result.shape)
+    print(ind)
+    result[ind] = 0
+    print(result[ind])
+    ind = np.unravel_index(np.argmax(result, axis=None), result.shape)
+    print(ind)
+    print(result[ind])
 
 
 if __name__ == "__main__":
