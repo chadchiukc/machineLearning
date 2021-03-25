@@ -72,12 +72,12 @@ def custom_train(X_train, y_train, X_test, y_test, net):
     val_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
     val_dataset = val_dataset.batch(batch_size=50)
 
-    epochs = 1
     iteration = []
     train_acc_result = []
     train_loss_result = []
     val_acc_result = []
     val_loss_result = []
+    epochs = 5
     for epoch in range(epochs):
         for step, (x_batch_train, y_batch_train) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
@@ -94,7 +94,7 @@ def custom_train(X_train, y_train, X_test, y_test, net):
                 )
                 for x_batch_val, y_batch_val in val_dataset:
                     val_logits = net(x_batch_val, training=False)
-                    val_loss_value = loss_fn(y_batch_train, logits)
+                    val_loss_value = loss_fn(y_batch_val, val_logits)
                     val_acc_metric.update_state(y_batch_val, val_logits)
                 val_acc = val_acc_metric.result()
                 print("Validation loss and acc: %.4f, %.4f" % (float(val_loss_value), float(val_acc)))
@@ -103,16 +103,28 @@ def custom_train(X_train, y_train, X_test, y_test, net):
                 val_loss_result.append(float(val_loss_value))
                 val_acc_result.append(float(val_acc))
                 iteration.append(epoch * 1200 + step)
-            if epoch * 1200 + step == 100:
-                val_acc_metric.reset_states()
-                train_acc_metric.reset_states()
+            if epoch * 1200 + step == 5000:
                 break
-    print(train_loss_result)
-    print(train_acc_result)
-    print(val_loss_result)
-    print(val_acc_result)
-    print(iteration)
+        val_acc_metric.reset_states()
+        train_acc_metric.reset_states()
+    plot_acc_loss(iteration, train_loss_result, train_acc_result, val_loss_result, val_acc_result)
     net.save('mnist_cnn')
+
+
+# plot the training result as well as the validation result
+def plot_acc_loss(iteration, train_loss, train_acc, val_loss, val_acc):
+    plt.xlabel('iterations')
+    plt.ylabel('loss')
+    plt.plot(iteration, train_loss, label='train data loss')
+    plt.plot(iteration, val_loss, label='test data loss')
+    plt.legend()
+    plt.show()
+    plt.xlabel('iterations')
+    plt.ylabel('acc')
+    plt.plot(iteration, train_acc, label='train data acc')
+    plt.plot(iteration, val_acc, label='test data acc')
+    plt.legend()
+    plt.show()
 
 
 def visualize_filters(net):
@@ -129,39 +141,43 @@ def visualize_filters(net):
     plt.show()
 
 
-# def visualize_patches():
+def visualize_patches(net, X_test, filter_layer_nums):
+    filter_weight, _ = net.layers[1].get_weights()
+
+    for num in range(filter_layer_nums):
+        selected_filter = filter_weight[:, :, :, num]
+        result = []
+        for x in X_test:
+            result_i = []
+            for i in range(0, 18, 2):
+                result_j = []
+                for j in range(0, 18, 2):
+                    testa = x[i:i + 12, j:j + 12, :]
+                    mul = testa * selected_filter
+                    mul = mul.sum()
+                    result_j.append(mul)
+                result_i.append(result_j)
+            result.append(result_i)
+        result = np.array(result)
+        for rank in range(12):
+            ind = np.unravel_index(np.argmax(result, axis=None), result.shape)
+            x, i, j = ind
+            result[ind] = 0
+            plt.subplot(filter_layer_nums, 12, num * 12 + rank + 1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.imshow(X_test[x][i:i + 12, j:j + 12], cmap='gray')
+        plt.title('layer %d' % num)
+    plt.show()
+
 
 def demo():
     X_train, y_train, X_test, y_test = load_data()
     # net = network()
+    # custom_train(X_train, y_train, X_test, y_test, net)
     net = keras.models.load_model('mnist_cnn', compile=False)
     # visualize_filters(net)
-    # custom_train(X_train, y_train, X_test, y_test, net)
-    # net = keras.Model(inputs=net.inputs, outputs=net.layers[1].output)
-    filter, _ = net.layers[1].get_weights()
-    test = X_test[0]
-    filter = filter[:, :, :, 0]
-
-    result =[]
-    for x in X_test:
-        result_i = []
-        for i in range(0, 18, 2):
-            result_j = []
-            for j in range(0, 18, 2):
-                testa = x[i:i + 12, j:j + 12, :]
-                mul = testa * filter
-                mul = mul.sum()
-                result_j.append(mul)
-            result_i.append(result_j)
-        result.append(result_i)
-    result = np.array(result)
-    ind = np.unravel_index(np.argmax(result, axis=None), result.shape)
-    print(ind)
-    result[ind] = 0
-    print(result[ind])
-    ind = np.unravel_index(np.argmax(result, axis=None), result.shape)
-    print(ind)
-    print(result[ind])
+    visualize_patches(net, X_test, 25)
 
 
 if __name__ == "__main__":
