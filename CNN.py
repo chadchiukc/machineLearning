@@ -165,8 +165,8 @@ def visualize_patches(net, X_test, filter_layer_nums):
             for i in range(0, 18, 2):
                 result_j = []
                 for j in range(0, 18, 2):
-                    testa = x[i:i + 12, j:j + 12, :]
-                    mul = testa * selected_filter
+                    patch_x = x[i:i + 12, j:j + 12, :]
+                    mul = patch_x * selected_filter
                     mul = mul.sum()
                     result_j.append(mul)
                 result_i.append(result_j)
