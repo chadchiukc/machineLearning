@@ -2,7 +2,6 @@ import os
 from tensorflow import keras
 import matplotlib.pyplot as plt
 from tensorflow.keras import layers
-from tensorflow.keras import losses
 import tensorflow as tf
 import numpy as np
 import random
