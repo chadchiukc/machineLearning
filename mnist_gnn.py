@@ -1,6 +1,6 @@
 from tensorflow import keras
 import numpy as np
-import scipy
+from tensorflow.keras import backend as K
 import tensorflow as tf
 
 
@@ -27,8 +27,35 @@ def load_data():
                 D[i][j] = np.sum(A[i][:], axis=0)
     D_half_norm = np.power(D, -0.5, where=D != 0)
 
-    A = D_half_norm.dot(A).dot(D_half_norm)
+    A = D_half_norm.dot(A).dot(D_half_norm).astype('float32')
     return X_train, y_train, X_test, y_test, A
+
+
+class GCN_1(tf.keras.layers.Layer):
+    def __init__(self, num_features, A, **kwargs):
+        super(GCN_1, self).__init__(**kwargs)
+        self.num_features = num_features
+        self.A = A
+
+    def build(self, input_shape):
+        super(GCN_1, self).build(input_shape)
+        self.W = self.add_weight("W", shape=(input_shape[-1], self.num_features), trainable=True)
+        # self.bias = self.add_weight("bias", shape=(self.num_features, ))
+
+    def call(self, x):
+        output = tf.matmul(x, self.W)
+        print(type(x))
+        output = tf.matmul(self.A, output)
+        print(np.shape(x))
+        print(np.shape(self.W))
+        print(np.shape(output))
+        print(np.shape(self.A))
+
+
+
+        # return [self.A, np.maximum(0, self.A.dot(x).dot(self.W) + self.bias)]
+        # return tf.tuple([self.A, tf.keras.activations.relu(output + self.bias)])
+        return tf.tuple([self.A, tf.keras.activations.relu(output)])
 
 
 class GCN(tf.keras.layers.Layer):
@@ -39,14 +66,16 @@ class GCN(tf.keras.layers.Layer):
     def build(self, input_shape):
         super(GCN, self).build(input_shape)
         self.W = self.add_weight("W", shape=(input_shape[1][-1], self.num_features))
-        self.bias = self.add_weight("bias", shape=self.num_features)
+        # self.bias = self.add_weight("bias", shape=self.num_features)
 
     def call(self, x):
         A = x[0]
         X = x[1]
+        output = tf.matmul(X, self.W)
+        output = tf.matmul(A, output)
 
         # relu function
-        return [A, np.maximum(0, self.A.dot(X).dot(self.W) + self.bias)]
+        return tf.tuple([A, tf.keras.activations.relu(output)])
 
 
 class DiffPool(keras.layers.Layer):
@@ -57,8 +86,8 @@ class DiffPool(keras.layers.Layer):
 
     def build(self, input_shape):
         super(DiffPool, self).build(input_shape)
-        self.assignment_matrix = GCN(num_outputs=self.max_clusters)
-        self.embedding_matrix = GCN(num_outputs=self.num_features)
+        self.assignment_matrix = GCN(num_features=self.max_clusters)
+        self.embedding_matrix = GCN(num_features=self.num_features)
 
     def call(self, x):
         A = x[0]
@@ -66,33 +95,33 @@ class DiffPool(keras.layers.Layer):
 
         (_, S) = self.assignment_matrix(x)
         (_, Z) = self.embedding_matrix(x)
-
         S = tf.keras.activations.softmax(S, axis=1)  # softmax is applied on assignment matrix
+        S_T = tf.transpose(S)
+        new_X = tf.matmul(S_T, Z)
+        new_A = tf.matmul(S_T, tf.matmul(A, S))
+        return tf.tuple([new_A, new_X])
 
-        new_X = S.T.dot(Z)
-        new_A = S.T.dot(A).dot(S)
-        return [new_A, new_X]
 
-
-def network():
-    inputs = keras.Input(shape=784,)
-    gcn_1 = GCN(256)(inputs)
-    diff_pool_1 = DiffPool(128, 256)(gcn_1)
-    gcn_2 = GCN(128)(diff_pool_1)
-    diff_pool_2 = DiffPool(128, 64)(gcn_2)
-    gcn_3 = GCN(128)(diff_pool_2)
-    diff_pool_3 = DiffPool(128, 1)(gcn_3)
+def network(A):
+    inputs = keras.Input(shape=784, )
+    gcn1 = GCN_1(256, A=A, name='gcn1')(inputs)
+    diff_pool_1 = DiffPool(128, 256, name='diff_pool_1')(gcn1)
+    gcn2 = GCN(128, name='gcn2')(diff_pool_1)
+    diff_pool_2 = DiffPool(128, 64, name='diff_pool_2')(gcn2)
+    gcn3 = GCN(128, name='gcn3')(diff_pool_2)
+    diff_pool_3 = DiffPool(128, 1, name='diff_pool_3')(gcn3)
     _, output = diff_pool_3
     outputs = keras.layers.Dense(10, activation="softmax")(output)
     net = keras.Model(inputs=inputs, outputs=outputs)
+    print(net.summary())
     return net
 
 
 def optimization(net):
     net.compile(
         loss=keras.losses.SparseCategoricalCrossentropy(from_logits=False),
-        optimizer=keras.optimizers.SGD(lr=0.001, momentum=0.5),
-        # optimizer = tf.keras.optimizers.Adam(lr=0.001),
+        # optimizer=keras.optimizers.SGD(lr=0.001, momentum=0.5),
+        optimizer = tf.keras.optimizers.Adam(lr=0.001),
         metrics=['accuracy'],
     )
     return net
@@ -110,12 +139,10 @@ def test(x_test, y_test, net):
 
 def demo():
     X_train, y_train, X_test, y_test, A = load_data()
-    net = network()
+    net = network(A)
     optimization(net)
     net = train(X_train, y_train, net)
     test(X_train, y_test, net)
 
 
 demo()
-
-
