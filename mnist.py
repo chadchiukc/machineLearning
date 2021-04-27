@@ -1,3 +1,4 @@
+import tensorflow_core.python.framework.random_seed
 from tensorflow import keras
 from tensorflow.keras import layers
 from sklearn.preprocessing import LabelEncoder
@@ -6,6 +7,7 @@ import numpy as np
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+tensorflow_core.python.framework.random_seed.set_seed(250)
 
 
 def load_data(binary=False):
@@ -18,39 +20,34 @@ def load_data(binary=False):
     else:
         y_train = keras.utils.to_categorical(y_train)
         y_test = keras.utils.to_categorical(y_test)
-    print(y_train)
     return x_train, y_train, x_test, y_test
 
 
-def network(binary=False, additional=False):
+def network(binary=False):
     inputs = keras.Input(shape=784)
     layer1 = keras.layers.Dense(512, activation="relu", name="layer1")(inputs)
-    if binary and not additional:
-        outputs = keras.layers.Dense(4, activation="sigmoid")(layer1)
-    elif binary and additional:
-        layer2 = keras.layers.Dense(10, activation="relu")(layer1)
-        outputs = keras.layers.Dense(4, activation="sigmoid")(layer2)
+    if binary:
+        outputs = keras.layers.Dense(4, activation='relu')(layer1)
     else:
-        outputs = keras.layers.Dense(10, activation="softmax")(layer1)
+        outputs = keras.layers.Dense(10, activation="relu")(layer1)
     net = keras.Model(inputs=inputs, outputs=outputs)
     return net
 
 
-def optimization(net, binary=False):
-    if binary:
-        loss = keras.losses.BinaryCrossentropy(from_logits=False)
-    else:
-        loss = keras.losses.CategoricalCrossentropy(from_logits=False)
+def optimization(net):
+    # loss = keras.losses.BinaryCrossentropy(from_logits=False)
+    loss = keras.losses.MeanSquaredError()
+    # loss = keras.losses.CategoricalCrossentropy(from_logits=False)
     net.compile(
         loss=loss,
-        optimizer=keras.optimizers.SGD(lr=0.001, momentum=0.5),
+        optimizer=keras.optimizers.SGD(lr=0.1, momentum=0.8),
         metrics=['accuracy'],
     )
     return net
 
 
 def train(x_train, y_train, net):
-    net.fit(x_train, y_train, batch_size=32, epochs=10)
+    net.fit(x_train, y_train, batch_size=32, epochs=5)
     return net
 
 
@@ -59,26 +56,33 @@ def test(x_test, y_test, net):
     return 0
 
 
-def demo(binary=False, additional=False):
+def demo(binary=False):
     x_train, y_train, x_test, y_test = load_data(binary)
-    net = network(binary, additional)
-    net = optimization(net, binary)
+    net = network(binary)
+    net = optimization(net)
     net = train(x_train, y_train, net)
     test(x_test, y_test, net)
     return net
 
 
-def trained_model(net):
-    x_train, y_train, x_test, y_test = load_data(binary=True)
-    inputs = keras.Input(shape=784)
-    layer1 = net(inputs)
-    outputs = keras.layers.Dense(4, activation="sigmoid")(layer1)
+def trained_model():
+    _, x_train, _, x_test = load_data(binary=False)
+    _, y_train, _, y_test = load_data(binary=True)
+    inputs = keras.Input(shape=10)
+    layer1 = keras.layers.Dense(64, activation='relu')(inputs)
+    outputs = keras.layers.Dense(4, activation="relu")(layer1)
     net = keras.Model(inputs=inputs, outputs=outputs)
-    net = optimization(net, binary=True)
+    net = optimization(net)
     net = train(x_train, y_train, net)
     test(x_test, y_test, net)
+    return net
 
 
 if __name__ == "__main__":
-    net = demo(binary=False, additional=False)
-    trained_model(net)
+    x_train, y_train, x_test, y_test = load_data(binary=True)
+    new_2 = trained_model()
+    net = demo(binary=False)
+    outputs = net.predict(x_train)
+    y_pred = new_2.predict(outputs)
+    loss = keras.losses.mean_squared_error(y_train, y_pred)
+    print(np.mean(loss))
