@@ -1,7 +1,7 @@
 import os
 from tensorflow import keras
 import tensorflow as tf
-from tensorflow.keras import layers
+from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.datasets import mnist
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -12,23 +12,33 @@ x_train = x_train.reshape(-1, 28 * 28).astype("float32") / 255.0
 x_test = x_test.reshape(-1, 28 * 28).astype("float32") / 255.0
 
 # Sequential API (Very convenient, not very flexible)
-model = keras.Sequential(
-    [
-        keras.Input(shape=(28 * 28)),
-        layers.Dense(512, activation="relu"),
-        layers.Dense(256, activation="relu"),
-        layers.Dense(10),
-    ]
-)
+# model = keras.Sequential(
+#     [
+#         keras.Input(shape=(28 * 28)),
+#         layers.Dense(512, activation="relu"),
+#         layers.Dense(256, activation="relu"),
+#         layers.Dense(10),
+#     ]
+# )
 # print(model.summary())
 import sys
+# model = keras.Sequential()
+# model.add(keras.Input(shape=(784)))
+# model.add(layers.Dense(784, activation="relu"))
+# model.add(layers.Dense(256, activation="relu", name="my_layer"))
+# model.add(layers.Dense(10))
+# print(model.summary())
+sys.exit()
+
 model = keras.Sequential()
-model.add(keras.Input(shape=(784)))
-model.add(layers.Dense(512, activation="relu"))
-model.add(layers.Dense(256, activation="relu", name="my_layer"))
-model.add(layers.Dense(10))
-print(model.summary())
-# sys.exit()
+model.add(keras.Input(shpae=(64, 64, 1)))
+model.add(Conv2D())
+layer1 = layers.Conv2D(25, (5, 5), padding="same ,strides=1, activation="relu")(inputs)
+layer4 = layers.Flatten()(layer3)
+outputs = layers.Dense(1, activation='softmax')(layer5)
+net = keras.Model(inputs=inputs, outputs=outputs)
+# print(net.summary())
+sys.exit()
 
 # Functional API (A bit more flexible)
 inputs = keras.Input(shape=(784))

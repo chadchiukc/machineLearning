@@ -1,13 +1,13 @@
+import joblib
+import matplotlib.pyplot as plt
+import numpy as np
+from flask import Flask, render_template, request
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, f1_score, \
+    precision_recall_fscore_support
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score, f1_score, precision_recall_fscore_support
-import matplotlib.pyplot as plt
-import joblib
-from flask import Flask, render_template, request
-import numpy as np
-
 
 app = Flask(__name__)
 

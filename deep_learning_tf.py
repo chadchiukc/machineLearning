@@ -1,6 +1,7 @@
 from tensorflow import keras
 from tensorflow.keras import layers
 import os
+import tensorflow as tf
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"

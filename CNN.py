@@ -185,7 +185,7 @@ def visualize_patches(net, X_test, filter_layer_nums):
 
 
 # Select training=True if you haven't train the model before. It will display the numbers, filters and the patches.
-def demo(training=False):
+def demo(training):
     X_train, y_train, X_test, y_test = load_data()
     visualize_data(X_train, y_train, X_test, y_test)
     if training:
@@ -198,4 +198,4 @@ def demo(training=False):
 
 
 if __name__ == "__main__":
-    demo(training=False)  # select True for first time
+    demo(training=True)  # select True for first time

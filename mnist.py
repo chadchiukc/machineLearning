@@ -1,3 +1,4 @@
+import tensorflow
 import tensorflow_core.python.framework.random_seed
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -35,9 +36,7 @@ def network(binary=False):
 
 
 def optimization(net):
-    # loss = keras.losses.BinaryCrossentropy(from_logits=False)
     loss = keras.losses.MeanSquaredError()
-    # loss = keras.losses.CategoricalCrossentropy(from_logits=False)
     net.compile(
         loss=loss,
         optimizer=keras.optimizers.SGD(lr=0.1, momentum=0.8),
@@ -56,7 +55,7 @@ def test(x_test, y_test, net):
     return 0
 
 
-def demo(binary=False):
+def first_model(binary=False):
     x_train, y_train, x_test, y_test = load_data(binary)
     net = network(binary)
     net = optimization(net)
@@ -65,7 +64,7 @@ def demo(binary=False):
     return net
 
 
-def trained_model():
+def second_model():
     _, x_train, _, x_test = load_data(binary=False)
     _, y_train, _, y_test = load_data(binary=True)
     inputs = keras.Input(shape=10)
@@ -78,11 +77,46 @@ def trained_model():
     return net
 
 
-if __name__ == "__main__":
+def third_model():
     x_train, y_train, x_test, y_test = load_data(binary=True)
-    new_2 = trained_model()
-    net = demo(binary=False)
-    outputs = net.predict(x_train)
+    inputs = keras.Input(shape=784)
+    layer1 = keras.layers.Dense(512, activation="relu", name="layer1")(inputs)
+    layer2 = keras.layers.Dense(10, activation="relu")(layer1)
+    layer3 = keras.layers.Dense(64, activation='relu')(layer2)
+    outputs = keras.layers.Dense(4, activation="relu")(layer3)
+    net = keras.Model(inputs=inputs, outputs=outputs)
+    net = optimization(net)
+    net = train(x_train, y_train, net)
+    test(x_test, y_test, net)
+    return net
+
+
+def partA():
+    net = first_model(binary=False)
+    print(net.summary())
+    net = first_model(binary=True)
+    print(net.summary())
+
+
+def partB():
+    x_train, y_train, x_test, y_test = load_data(binary=True)
+    new_2 = second_model()
+    print(new_2.summary())
+    net = first_model(binary=False)
+    outputs = net.predict(x_test)
     y_pred = new_2.predict(outputs)
-    loss = keras.losses.mean_squared_error(y_train, y_pred)
-    print(np.mean(loss))
+    loss = keras.losses.mean_squared_error(y_test, y_pred)
+    print('new loss: {}'.format(np.mean(loss)))
+    acc = tensorflow.metrics.binary_accuracy(y_true=y_test, y_pred=y_pred)
+    print('new accuracy: {}'.format(np.mean(acc)))
+
+
+def partC():
+    net = third_model()
+    print(net.summary())
+
+
+if __name__ == "__main__":
+    # partA()
+    partB()
+    # partC()
